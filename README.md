@@ -54,18 +54,17 @@ Every MLflow run records:
 
 The notebooks contain individual model experiments. `train_salary_models_with_mlflow.py` provides the consolidated MLflow training and model-registration workflow.
 
-## Requirements
+## Installation
 
-The training script imports the following packages:
+Create a virtual environment and install the project dependencies:
 
-- pandas
-- scikit-learn
-- MLflow
-- XGBoost
-- LightGBM
-- CatBoost
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-DVC is also required to restore the tracked dataset.
+The environment includes the five model libraries, MLflow, JupyterLab, and `dvc-gdrive` for the configured Google Drive DVC remote.
 
 ## Restore the Data
 
