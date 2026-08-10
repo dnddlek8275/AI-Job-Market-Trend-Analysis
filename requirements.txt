@@ -1,0 +1,8 @@
+pandas
+scikit-learn
+mlflow
+xgboost
+lightgbm
+catboost
+dvc-gdrive
+jupyterlab
