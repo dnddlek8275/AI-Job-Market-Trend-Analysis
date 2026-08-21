@@ -29,6 +29,7 @@ RANDOM_STATE = 42
 TEST_SIZE = 0.2
 EXPERIMENT_NAME = "salary_prediction_models"
 REGISTERED_MODEL_NAME = "salary_classifier"
+SELECTED_MODEL_NAME = "LightGBM"
 
 
 def require_package(module_name, package_name=None):
@@ -56,10 +57,6 @@ def load_data():
 
 
 def build_models(y_train):
-    negative_count = int((y_train == 0).sum())
-    positive_count = int((y_train == 1).sum())
-    scale_pos_weight = negative_count / positive_count
-
     models = {
         "LogisticRegression": {
             "model": Pipeline(
@@ -98,39 +95,6 @@ def build_models(y_train):
                 "random_state": RANDOM_STATE,
                 "n_jobs": 1,
             },
-        },
-    }
-
-    require_package("xgboost")
-    from xgboost import XGBClassifier
-
-    models["XGBoost"] = {
-        "model": XGBClassifier(
-            n_estimators=450,
-            learning_rate=0.04,
-            max_depth=4,
-            min_child_weight=2,
-            subsample=0.9,
-            colsample_bytree=0.9,
-            objective="binary:logistic",
-            eval_metric=["logloss", "auc"],
-            scale_pos_weight=scale_pos_weight,
-            random_state=RANDOM_STATE,
-            n_jobs=-1,
-            tree_method="hist",
-            verbosity=0,
-        ),
-        "params": {
-            "n_estimators": 450,
-            "learning_rate": 0.04,
-            "max_depth": 4,
-            "min_child_weight": 2,
-            "subsample": 0.9,
-            "colsample_bytree": 0.9,
-            "objective": "binary:logistic",
-            "scale_pos_weight": scale_pos_weight,
-            "random_state": RANDOM_STATE,
-            "tree_method": "hist",
         },
     }
 
@@ -207,10 +171,12 @@ def evaluate(model, X_test, y_test):
     }
 
 
-def register_best_model(run_results):
-    best = max(run_results, key=lambda item: item["metrics"]["roc_auc"])
+def register_selected_model(run_results):
+    selected = next(
+        item for item in run_results if item["model_name"] == SELECTED_MODEL_NAME
+    )
     registered = mlflow.register_model(
-        model_uri=best["model_uri"],
+        model_uri=selected["model_uri"],
         name=REGISTERED_MODEL_NAME,
     )
     client = MlflowClient()
@@ -219,7 +185,7 @@ def register_best_model(run_results):
         alias="production",
         version=registered.version,
     )
-    return best, registered.version
+    return selected, registered.version
 
 
 def main():
@@ -276,10 +242,10 @@ def main():
     if args.skip_register:
         return
 
-    best, version = register_best_model(run_results)
+    selected, version = register_selected_model(run_results)
     print(
-        f"Best model: {best['model_name']} "
-        f"roc_auc={best['metrics']['roc_auc']:.4f} "
+        f"Selected model: {selected['model_name']} "
+        f"roc_auc={selected['metrics']['roc_auc']:.4f} "
         f"registered as {REGISTERED_MODEL_NAME} version {version} "
         "with alias production"
     )
